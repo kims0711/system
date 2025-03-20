@@ -191,6 +191,13 @@ FROM EMPLOYEES e ;
 
 
 
+--회사 내에 최대 연봉자와 최소 연봉자의 차를 구해라
+SELECT max(e.SALARY) - min(e.SALARY) AS 연봉차이
+FROM EMPLOYEES e ;
+
+--매니저로 근무하는 사원들 숫자 조회
+SELECT count(DISTINCT e.MANAGER_ID)
+FROM EMPLOYEES e ;
 
 
 

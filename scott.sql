@@ -318,6 +318,19 @@ SELECT e.EMPNO, e.ENAME, e.SAL, e.DEPTNO FROM emp e WHERE e.DEPTNO =10;
 --특정문자를 다른 문자로 변경 : REPLACE(원본문자열, 찾을문자열, 변경문자열)
 --두 문자열 데이터를 합치기 : CONCAT(문자열1, 문자열2)
 --특정 문자 제거 : TRIM(), LTRIM(), RTRIM()
+--데이터의 공간을 지정 문자로 채우기 : LPAD(), RPAD()
+	-->LPAD(데이터, 데이터 자릿수, 채울 문자)
+	-->RPAD(데이터, 데이터 자릿수, 채울 문자)
+
+--Oracle => 10 자리로 표현 
+SELECT
+	'Oracle',
+	LPAD('Oracle', 10, '#'),
+	RPAD('Oracle', 10, '*'),
+	LPAD('Oracle', 10),
+	RPAD('Oracle', 10)
+FROM
+	dual;
 
 --사원 이름을 대문자, 소문자, 첫문자만 대문자로 변경
 SELECT e.ENAME, UPPER(e.ENAME), LOWER(e.ENAME), INITCAP(e.ENAME)
@@ -524,21 +537,306 @@ TO_CHAR(SYSDATE,'HH12:MI:SS AM' ), --AM이나 PM이나 현재 기준으로 나�
 TO_CHAR(SYSDATE,'HH:MI:SS PM' ) 
 FROM DUAL; 
 
+--TO_CHAR로 돈 보기 편하게 쉼표 넣어주기도 ㄱㄴ하다
+--9: 숫자 한자리를 의미
+--0: 얘도 숫자 한 자리를 의미하지만 빈 자리가 있으면 0으로 채운다. 
+SELECT
+	e.sal,
+	TO_CHAR(e.sal, '$999,999'),
+	
+	e.sal,
+	TO_CHAR(e.sal, '$000,000')
+FROM
+	emp e; 
+
+	
+	--TO_NUMBER
+--문자열 데이터와 숫자 데이터 연산
+--이렇게 해도 계산 해준다  
+	SELECT
+	'1300' - '1500',
+	1300 + '1500'
+FROM
+	DUAL;
+--쉼표 넣으면 문자열 섞여서 에러 나고 계산 ㅂㄱㄴ
+	SELECT
+	'1,300' -'1500'
+FROM
+	DUAL;
+
+--TO_NUMBER로 해결 ㄱㄴ하다!
+--TO_NUMBER('문자열 데이터', '인식할 숫자 형태')
+SELECT
+	TO_NUMBER('1,300', '999,999') - TO_NUMBER('1,500', '999,999')
+FROM
+	DUAL;
+
+
+	--TO_DATE : 문자열 데이터를 날짜 형식으로 바꿈
+--형식 지정할때 Y,M,D 사이에 어지간한 특수기호는 다 되는듯(걍 띄어쓰기도 됨)
+SELECT
+	TO_DATE('2025-03-20', 'YYYY$MM DD')
+FROM
+	DUAL;
+	
+	--NULL
+--산술연산이나 비교연산자(IS NULL/IS NOT NULL)가 제대로 수행되지 않음
+--1) NVL(널 여부 검사할  데이터, 널일 때 반환 할 데이터)
+--2) NVL2(널 여부 검사할  데이터, 널이 아닐 때 반환 할 데이터, 널일 때 반환 할 데이터)
+SELECT
+	E.EMPNO,
+	E.ENAME,
+	E.SAL,
+	E.COMM,
+	E.SAL + E.COMM,
+	NVL(E.COMM, 0),
+	E.SAL + NVL(E.COMM, 0)
+FROM
+	EMP E;
+--NVL2()
+SELECT
+	E.EMPNO,
+	E.ENAME,
+	E.SAL,
+	E.COMM,
+	E.SAL + E.COMM,
+	NVL2(E.COMM, 'o' ,'x'),
+	NVL2(E.COMM,E.SAL*12+E.COMM,E.SAL*12) AS 연봉
+FROM
+	EMP E;
+
+--자바의 if, switch 구문과 유사하다 
+--DECODE 
+--DECODE(검사대상이 될 데이터, 
+--	조건1, 조건1 만족 시 반환할 결과, 
+--	조건2, 조건2 만족 시 반환할 결과,
+--	조건3, 조건3 만족 시 반환할 결과,
+--	...
+--	조건1 ~ 조건n 일치하지 않을 때 반환할 결과
+--	)
+
+--CASE
+--CASE 검사대상이 될 데이터
+--	WHEN 조건1 THEN 조건1 만족 시 반환할 결과
+--	WHEN 조건2 THEN 조건2 만족 시 반환할 결과
+--	WHEN 조건3 THEN 조건3 만족 시 반환할 결과
+--	...
+--	ELSE 일치하지 않을 때 반환할 결과
+--	END (END 꼭 있어야 함)
+	
+--직책이 MANAGER인 사원은 급여의 10% 인상
+--직책이 SALESMAN인 사원은 급여의 5% 인상
+--직책이 ANALYST인 사원은 동결
+--나머지는 3%인상
+
+--DECODE 예제
+SELECT
+	e.EMPNO,
+	e.ENAME,
+	e.JOB,
+	e.SAL,
+	DECODE(e.job, 'MANAGER', e.sal * 1.1,
+	e.job 'SALESMAN', e.sal * 1.05,
+	e.job 'ANALYST', e.sal,
+	e.sal * 1.03) AS UPSAL
+FROM
+	emp e;
+--CASE 예제
+SELECT
+	e.EMPNO,
+	e.ENAME,
+	e.JOB,
+	e.SAL,
+	CASE
+		e.job 
+	WHEN 'MANAGER' THEN e.sal * 1.1
+		WHEN e.job 'SALESMAN' THEN e.sal * 1.05
+		WHEN e.job 'ANALYST' THEN e.sal
+		ELSE e.sal * 1.03)
+	END AS upsal
+FROM
+	emp e; 
+
+--COMMISION이 NULL 이면 '해당사항 없음'
+--COMMISION이 0이면 '수당없음'
+--COMMISION이 > 0 이면 '수당: ~~'
+SELECT
+	E.EMPNO,
+	E.ENAME,
+	E.JOB,
+	E.SAL,
+CASE
+		WHEN E.COMM IS NULL THEN '해당사항없음'
+		WHEN E.COMM = 0 THEN '수당없음'
+		WHEN E.COMM > 0 THEN '수당 : ' || E.COMM
+	END AS COMM_TEXT
+FROM
+	EMP E;
+
+--[실습]
+--1.empno 7369 => 73**, ename SMITH => S****
+--empno, 마스킹처리empno, ename, 마스킹처리ename
+
+--RPAD() 이용
+SELECT
+	e.empno,
+	--SUBSTR(e.EMPNO, 1, 2) || LPAD('*', LENGTH(e.EMPNO)-2, '*'),
+	RPAD(SUBSTR(e.EMPNO,1,2), LENGTH(e.EMPNO), '*'),
+	e.ENAME,
+	--SUBSTR(e.ENAME, 1, 1) || LPAD('*', LENGTH(e.ENAME)-1, '*')
+	RPAD(SUBSTR(e.ENAME,1,1), LENGTH(e.ENAME), '*')
+FROM
+	emp e;
+
+--2.emp 테이블에서 사원의 월 평균 근무일수는 21일이다.
+--하루 근무시간을 8시간으로 보았을 때 사원의 하루 급여(day_pay)와 시급(time_pay)를 계산하여 출력하기
+--단, 하루급여는 소수 셋째자리에서 버리고, 시급은 둘째자리에서 반올림
+SELECT
+	e.ENAME,
+	TRUNC(e.sal / 21, 2) AS day_pay,
+	ROUND(e.sal / 21 / 8, 1) AS time_pay,
+	e.SAL AS 월급
+FROM
+	emp e;
+
+--3.입사일을 기준으로 3개월이 지난 후 첫 월요일에 정직원이 된다.
+--사원이 정직원이 되는 날짜(R_JOB)을 YYYY-MM-DD 형식으로 출력한다.
+--단, 추가수당이 없는 사원의 추가수당은 N/A로 출력
+--출력형태) EMPNO, ENAME, HIREDATE, R_JOB, COMM
+SELECT
+	e.empno,
+	e.ename,
+	e.hiredate,
+	TO_CHAR(NEXT_DAY(ADD_MONTHS(e.HIREDATE , 3), '월요일'), 'YYYY-MM-DD') AS R_JOB,
+	NVL(TO_CHAR(e.COMM) ,'N/A') AS COMM --e.comm이 넘버 타입이라서 그냥 실행하면 오류 뜨고 TO_CHAR로 e.comm을 문자로 바꾸는 것
+FROM
+	emp e;
+
+	
+--4.직속상관의 사원번호가 없을 때 : 0000
+--직속상관의 사원번호 앞 두 자리가 75일때: 5555
+--직속상관의 사원번호 앞 두 자리가 76일때: 6666
+--직속상관의 사원번호 앞 두 자리가 77일때: 7777
+--출력형태: EMPNO, ENAME, MGR, CHG_MGR
+
+SELECT
+	e.EMPNO,
+	e.ENAME,
+	e.MGR,
+	CASE 
+		WHEN e.MGR IS NULL THEN '0000'
+		WHEN SUBSTR(TO_CHAR(e.mgr), 1, 2) = '75' THEN '5555' -- 마찬가지로 e.mgr이 넘버타입이라서 to_char 해주어야 함
+		WHEN SUBSTR(TO_CHAR(e.mgr), 1, 2) = '76' THEN '6666'
+		WHEN SUBSTR(TO_CHAR(e.mgr), 1, 2) = '77' THEN '7777'
+		WHEN SUBSTR(TO_CHAR(e.mgr), 1, 2) = '78' THEN '8888'
+		ELSE TO_CHAR(e.MGR)
+	END AS chg_mgr --AS는 쓸거면 END 옆에 써야함 
+FROM
+	emp e;
+
+--like으로도 ㄱㄴ
+SELECT
+	e.EMPNO,
+	e.ENAME,
+	e.MGR,
+	CASE 
+		WHEN e.MGR IS NULL THEN '0000'
+		WHEN e.MGR like '75%' THEN '5555' 
+		WHEN e.MGR like '76%' THEN '6666'
+		WHEN e.MGR like '77%' THEN '7777'
+		WHEN e.MGR like '78%' THEN '8888'
+		ELSE TO_CHAR(e.MGR)
+	END AS chg_mgr --AS는 쓸거면 END 옆에 써야함 
+FROM
+	emp e;
+
+--decode로 하기
+SELECT
+	e.EMPNO,
+	e.ENAME,
+	e.MGR,
+	DECODE(SUBSTR(to_char(nvl(e.mgr, 0)), 1, 2),
+	'0', '0000',
+'75', '5555',
+'76', '6666',
+'77', '7777',
+'78', '8888',
+substr(to_char(e.mgr), 1)) 
+AS chg_mgr
+FROM
+	EMP e;
+
+SELECT
+	e.EMPNO,
+	e.ENAME,
+	e.MGR,
+	DECODE(SUBSTR(to_char(e.mgr), 1, 2),
+	NULL , '0000',
+'75', '5555',
+'76', '6666',
+'77', '7777',
+'78', '8888',
+substr(to_char(e.mgr), 1)) 
+AS chg_mgr
+FROM
+	EMP e;
 
 
 
+--하나의  열에 출력결과를 담는 다중행 함수 (엑셀의 함수 같은 것)
+--null행은 제외하고 연산 
+--1. sum()
+--2. count()
+--3. max()
+--4. min()
+--5. avg()
+
+--sum()
+--전체사원 급여 합
+SELECT sum(e.sal) FROM emp e;
+
+--중복된 급여는 제외하고 합 
+SELECT
+	sum(e.SAL),
+	sum(DISTINCT e.SAL),
+	sum(ALL e.SAL)
+FROM
+	emp e;
+
+--단일 그룹의 그룹 함수가 아닙니다 (오류 예시)
+--SELECT e.ename, sum(e.sal) FROM emp e;
 
 
 
+--count()
+--사원 수 구하기 (컬럼은 전부 수 똑같으니까 아무거나 해도 됨)
+SELECT
+	count(e.ENAME),
+	count(ALL e.COMM) 
+	--4명만 나옴 ->null은 제외해서
+FROM
+	emp e
 
+--급여의 최댓값과 최솟값
+SELECT max(e.sal), min(e.SAL)
+FROM emp e;
 
+--10번 부서 사원 중에서 급여 최댓값
+SELECT max(e.sal) , min(e.SAL)
+FROM emp e
+WHERE e.DEPTNO = 10;	
 
+--20번 부서에서 입사일이 가장 늦은 사람
+SELECT max(e.HIREDATE)--날짜도 숫자의 개념이 있어서 이렇게 가능하다! 
+FROM emp e
+WHERE e.DEPTNO = 20;
 
+--10번 부서에서 입사일이 가장 빠른 사람
+SELECT min(e.hiredate)
+FROM emp e
+WHERE e.DEPTNO = 10;
 
-
-
-
-
-
-
-
+--부서번호가 30번인 사원들의 평균 급여
+SELECT avg(e.SAL)
+FROM emp e
+WHERE e.DEPTNO = 30;
