@@ -201,6 +201,50 @@ FROM EMPLOYEES e ;
 
 
 
+-- 부서 별 직원 수를 구하기(부서번호 오름차순)
+--부서번호, 직원수
+SELECT e.DEPARTMENT_ID, COUNT(e.EMPLOYEE_ID) AS 직원수
+FROM EMPLOYEES e 
+GROUP BY e.DEPARTMENT_ID
+ORDER BY e.DEPARTMENT_ID;
+
+
+--부서 별 평균 연봉 조회(부서번호 오름차순)
+--부서번호 평균연봉(2215.45 => 2215)
+SELECT e.DEPARTMENT_ID, round(AVG(e.SALARY)) AS 평균연봉
+FROM EMPLOYEES e 
+GROUP BY e.DEPARTMENT_ID
+ORDER BY e.DEPARTMENT_ID;
+
+--동일한 직무를 가진 사원의 수 조회
+--job_id 인원수 
+SELECT e.JOB_ID, COUNT(e.EMPLOYEE_ID) AS 해당직무직원수
+FROM EMPLOYEES e 
+GROUP BY e.JOB_ID;
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 

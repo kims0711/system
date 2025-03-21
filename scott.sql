@@ -11,11 +11,13 @@
 
 
 --sql구문의 실행 순서 (그냥 생각해보면 당연한거)
-(3) SELECT 
+(5) SELECT 
 (1) FROM 
 (2) WHERE 
-(4) ORDER BY 
-;
+(3) GROUP BY 
+(4) HAVING 
+(6) ORDER BY 
+
 
 ALTER SESSION SET "_ORACLE_SCRIPT"=TRUE;
 
@@ -803,7 +805,7 @@ SELECT
 FROM
 	emp e;
 
---단일 그룹의 그룹 함수가 아닙니다 (오류 예시)
+--단일 그룹의 그룹 함수가 아닙니다 (해결 : group by 절에 사용한 컬럼만 가능)
 --SELECT e.ename, sum(e.sal) FROM emp e;
 
 
@@ -840,3 +842,254 @@ WHERE e.DEPTNO = 10;
 SELECT avg(e.SAL)
 FROM emp e
 WHERE e.DEPTNO = 30;
+
+--결과값을 원하는 열로 묶어 출력 : GROUP BY
+--부서별 평균 급여 조회
+SELECT e.DEPTNO AS 부서번호 ,AVG(e.SAL)
+FROM emp e
+GROUP BY e.DEPTNO;
+
+--부서별, 직책별 평균 급여
+SELECT e.DEPTNO, e.JOB, AVG(e.SAL)
+FROM emp e
+GROUP BY e.DEPTNO, e.JOB
+ORDER BY e.DEPTNO;
+
+
+--결과값을 원하는 열로 묶어 출력할 때 조건 추가 : GROUP BY + HAVING 
+
+--부서별, 직책별 평균 급여 조회 + 평균급여 >= 2000
+SELECT e.DEPTNO, e.JOB , AVG(e.SAL)
+FROM emp e
+GROUP BY e.DEPTNO, e.JOB HAVING AVG(e.SAL)>=2000
+
+--같은 직무에 종사하는 사원이 3명 이상인 직책과 인원 수 출력
+SELECT e.JOB, count(e.ENAME)
+FROM emp e
+GROUP BY e.job HAVING COUNT(e.ename) >=3;
+
+--사원들의 입사연도를 기준으로 부서별로 몇 명이 입사했는지 출력
+--출력 예시 
+--1987 20 2
+--1987 30 1
+--...
+SELECT TO_CHAR(e.HIREDATE ,'YYYY'), e.DEPTNO, COUNT(e.EMPNO) AS 사원수
+FROM emp e
+GROUP BY TO_CHAR(e.HIREDATE,'YYYY') ,e.DEPTNO --연도로 그룹 잡기
+ORDER BY TO_CHAR(e.HIREDATE,'YYYY') ,e.DEPTNO; --여기도 to_char 해야 정렬 ㄱㄴ SELECT 하고 정렬하니까 순서 상으로도 그게 맞음
+
+--조인(join)
+--여러 종류의 데이터를 다양한 테이블에 나누어 저장하기 때문에 여러 테이블의 데이터를 조합하여 출력할 때가 많다. 이때 사용하는 방식이 조인
+--종류
+	--내부조인(inner join) : 연결 안 되는 데이터는 제외시킴
+		--1.등가조인: 각 테이블의 특정 열과 일치하는 데이터를 기준으로 추출
+		--2.비등가조인: 등가조인 외의 방식
+		--3.자체(slef) 조인: 같은 테이블끼리 조인
+	--외부조인(outer join) : 연결 안 되는 데이터도 제외하지 않고 출력시킴
+		--1.왼쪽외부조인(left outer join): 오른쪽 테이블의 데이터 존재 여부와 상관없이 왼쪽 테이블 기준으로 출력
+		--2.오른쪽외부조인(right outer join): 왼쪽 테이블의 데이터 존재 여부와 상관없이 오른쪽 테이블 기준으로 출력
+
+
+--사원별, 부서정보 조회 
+SELECT e.EMPNO, e.DEPTNO, d.Dname, d.LOC --원하는 것만 뽑아서 볼 수 있다 
+FROM emp e, DEPT d 
+WHERE e.DEPTNO =d.DEPTNO; --e.deptno와 d.deptno가 일치하면 연결해라 (join) (등가조인)
+
+--나올 수 있는 모든 조합 
+SELECT e.EMPNO, e.DEPTNO, d.Dname, d.LOC 
+FROM emp e, DEPT d ;
+
+--사원별, 부서정보 조회 + 사원별 급여>=3000
+SELECT e.EMPNO, e.DEPTNO, e.SAL, d.DNAME , d.LOC --원하는 것만 뽑아서 볼 수 있다 
+FROM emp e, DEPT d 
+WHERE e.DEPTNO =d.DEPTNO AND e.SAL >=3000;
+
+--사원별, 부서정보 조회 + 사원별 급여<=2500 + 사원번호 9999이하
+SELECT e.EMPNO, e.DEPTNO, e.SAL, d.DNAME , d.LOC --원하는 것만 뽑아서 볼 수 있다 
+FROM emp e, DEPT d 
+WHERE e.DEPTNO =d.DEPTNO AND e.SAL <=2500 AND e.EMPNO <=9999;
+
+--비등가조인 
+--사원별 정보 + salgrade grade
+SELECT *
+FROM EMP e ,SALGRADE s
+WHERE e.SAL BETWEEN s.LOSAL AND s.HISAL;
+--WHERE e.SAL >=s.LOSAL AND e.SAL <=s.HISAL; 
+--위와 같이 between 쓰는게 굿 
+
+--자체조인 
+--사원정보 + 직속상관 정보 
+SELECT
+	e1.EMPNO ,
+	e1.ENAME,
+	e1.MGR,
+	e2.ENAME AS manager_name
+FROM
+	emp e1,
+	emp e2
+WHERE
+	e1.MGR = e2.EMPNO;
+
+--left/right outer join
+--left outer join
+SELECT
+	e1.EMPNO ,
+	e1.ENAME,
+	e1.MGR,
+	e2.ENAME AS manager_name
+FROM
+	emp e1,
+	emp e2
+WHERE
+	e1.MGR = e2.EMPNO(+);
+
+
+--right outer join
+SELECT
+	e1.EMPNO ,
+	e1.ENAME,
+	e1.MGR,
+	e2.ENAME AS manager_name
+FROM
+	emp e1,
+	emp e2
+WHERE
+	e1.MGR(+) = e2.EMPNO;
+
+
+
+--표준 문법을 사용한 조인
+--join ~ on : inner 조인 
+--join 테이블명 on 조인하는 조건 
+SELECT e.EMPNO, e.DEPTNO, d.Dname, d.LOC 
+FROM emp e JOIN DEPT d ON e.DEPTNO =d.DEPTNO;
+
+
+
+SELECT
+	*
+FROM
+	EMP e
+JOIN SALGRADE s
+ON
+	e.SAL BETWEEN s.LOSAL AND s.HISAL;
+
+--left outer join 테이블명 on 조인조건
+SELECT
+	e1.EMPNO ,
+	e1.ENAME,
+	e1.MGR,
+	e2.ENAME AS manager_name
+FROM
+	emp e1
+LEFT OUTER JOIN 
+	emp e2
+ON
+	e1.MGR = e2.EMPNO;
+--right outer join 테이블명 on 조인조건
+SELECT
+	e1.EMPNO ,
+	e1.ENAME,
+	e1.MGR,
+	e2.ENAME AS manager_name
+FROM
+	emp e1
+RIGHT OUTER JOIN 
+	emp e2
+ON
+	e1.MGR = e2.EMPNO;
+
+--inner, outer 생략 가능하다 
+SELECT
+	e1.EMPNO ,
+	e1.ENAME,
+	e1.MGR,
+	e2.ENAME AS manager_name
+FROM
+	emp e1
+INNER JOIN 
+	emp e2
+ON
+	e1.MGR = e2.EMPNO;
+
+--1)급여가 2000을 초과한 사원의 부서정보, 사원정보 출력 
+--출력) 부서번호, 부서명, 사원번호, 사원명, 급여 
+SELECT
+	e.DEPTNO,
+	d.DNAME,
+	e.EMPNO,
+	e.ENAME,
+	e.SAL
+FROM
+	EMP e
+JOIN DEPT d ON
+	e.DEPTNO = d.DEPTNO
+WHERE
+	e.sal>2000
+ORDER BY
+	e.DEPTNO ,
+	d.DNAME,
+	e.empno; --정렬은 그냥 내거 정렬한거
+
+
+--2)모든 부서정보와 사원정보를 부서번호, 사원번호 순서로 정렬하여 출력 
+--출력) 부서번호, 부서명, 사원번호, 사원명, 직무, 급여
+SELECT
+	e.DEPTNO,
+	d.DNAME,
+	e.EMPNO,
+	e.ENAME,
+	e.JOB ,
+	e.SAL
+FROM
+	emp e
+JOIN DEPT d ON
+	e.DEPTNO = d.DEPTNO
+ORDER BY
+	e.DEPTNO,
+	e.EMPNO;
+
+--3)모든 부서정보, 사원정보, 급여등급정보, 각 사원의 직속상관 정보를 
+--부서번호, 사원번호 순서로 정렬하여 출력
+--출력)부서번호, 부서명, 사원번호, 사원명, 매니저번호, 급여, losal, hisal, grade,매니저empno, 매니저 이름
+
+--얘 자체조인 이용해야함
+SELECT
+	e1.DEPTNO,
+	d.DNAME,
+	e1.EMPNO ,
+	e1.ENAME,
+	e1.MGR,
+	e1.SAL,
+	s.LOSAL,
+	s.HISAL,
+	s.GRADE,
+	e2.EMPNO AS MANAGER_ID,
+	e2.ENAME AS MANAGER_NAME
+FROM
+	emp e1
+LEFT OUTER JOIN emp e2 ON
+	e1.MGR = e2.EMPNO
+JOIN dept d ON
+	e1.DEPTNO = d.DEPTNO
+JOIN 
+	SALGRADE s ON
+	e1.SAL BETWEEN s.LOSAL AND s.HISAL
+ORDER BY
+	e1.DEPTNO,
+	e1.EMPNO;
+
+--4)부서별 평균급여, 최대급여, 최소급여, 사원 수 출력
+--출력)부서번호, 부서명, avg_sal, min_sal, cnt
+SELECT e.DEPTNO, d.DNAME, AVG(e.SAL) AS avg_sal, MIN(e.SAL) AS min_sal, COUNT(e.EMPNO) AS cnt 
+FROM EMP e RIGHT OUTER  JOIN DEPT d ON e.DEPTNO =d.DEPTNO 
+GROUP BY e.DEPTNO, d.DNAME --여기서 d.dname도 GROUP BY 해주어야 함 (행 수 맞추기)
+ORDER BY e.DEPTNO ;
+
+
+
+
+
+
+
+
