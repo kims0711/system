@@ -228,6 +228,8 @@ GROUP BY e.JOB_ID;
 
 -- 직업 id가 SA_MAN 인 사원들의 최대 연봉보다 높게 받는 사원들의 
 -- last_name, job_id, salary 조회
+
+-- 단일행
 SELECT
 	e.LAST_NAME ,
 	e.JOB_ID ,
@@ -243,19 +245,121 @@ WHERE
 	WHERE
 		e.JOB_ID = 'SA_MAN');
 
+-- 다중행 all 쓰기
+SELECT
+	e.LAST_NAME ,
+	e.JOB_ID ,
+	e.SALARY
+FROM
+	EMPLOYEES e
+WHERE
+	e.salary > ALL(
+	SELECT
+		e.SALARY
+	FROM
+		employees e
+	WHERE
+		e.JOB_ID = 'SA_MAN');
+
 
 -- 커미션을 받는 사원들의 부서와 연봉이 동일한 사람들의 last_name, deptno, salary 조회
-SELECT e.LAST_NAME, e.DEPARTMENT_ID , e.SALARY, e.COMMISSION_PCT FROM EMPLOYEES GROUP BY  e WHERE e.COMMISSION_PCT >0;
 
-SELECT AVG(e.SALARY) FROM EMPLOYEES e WHERE e.COMMISSION_PCT >0; 
+SELECT
+	e.LAST_NAME,
+	e.DEPARTMENT_ID,
+	e.SALARY
+FROM
+	employees e
+WHERE
+	(e.DEPARTMENT_ID,
+	e.salary) IN (
+	SELECT
+		e.DEPARTMENT_ID ,
+		e.SALARY
+	FROM
+		EMPLOYEES e
+	WHERE
+		e.COMMISSION_PCT >0); 
+
+
 
 -- 회사 전체 평균 연봉보다 더 버는 사원들 중 last_name에 u가 있는 사원들이 근무하는 부서와 같은 부서에 근무하는 사원들의 
 -- 사번, last_name, salary 조회 
-    SELECT e.EMPLOYEE_ID, e.LAST_NAME, e.SALARY FROM employees e WHERE e.salary > (SELECT AVG(e.SALARY) FROM EMPLOYEES e) 
-    AND (SELECT e.DEPARTMENT_ID  FROM employees e WHERE e.LAST_NAME ) 
+
+    SELECT
+    e.EMPLOYEE_ID, 
+	e.LAST_NAME,
+	e.SALARY
+FROM
+	EMPLOYEES e
+WHERE
+	e.DEPARTMENT_ID IN(SELECT
+	DISTINCT e.DEPARTMENT_ID
+FROM
+	EMPLOYEES e
+WHERE
+	e.SALARY >(
+	SELECT
+		round(AVG(e.SALARY))
+	FROM
+		EMPLOYEES e)
+	AND e.LAST_NAME LIKE '%u%')
+    ORDER BY e.LAST_NAME , e.SALARY;
+    
+-- join 이용
+ SELECT
+	e.EMPLOYEE_ID, 
+	e.LAST_NAME,
+	e.SALARY
+FROM
+	EMPLOYEES e
+JOIN (
+	SELECT
+		DISTINCT e.DEPARTMENT_ID
+	FROM
+		EMPLOYEES e
+	WHERE
+		e.SALARY >(
+		SELECT
+			round(AVG(e.SALARY))
+		FROM
+			EMPLOYEES e)
+		AND e.LAST_NAME LIKE '%u%') d
+ON 
+	e.DEPARTMENT_ID = d.DEPARTMENT_ID;
+    
 
 -- 각 부서별 평균 연봉보다 더 받는 동일부서 사원들의 last_name, salary, deptno, 해당 부서의 평균연봉 조회(부서별 평균 연봉을 기준으로 오름차순)
-SELECT e.LAST_NAME, e.SALARY, e.DEPARTMENT_ID , AVG(e.SALARY)  FROM EMPLOYEES e 
+SELECT e.LAST_NAME, e.SALARY, e.DEPARTMENT_ID  FROM EMPLOYEES e WHERE (e.DEPARTMENT_ID, e.SALARY)
+IN (SELECT e.DEPARTMENT_ID, ROUND(AVG(e.SALARY)) FROM EMPLOYEES e GROUP BY e.DEPARTMENT_ID) 
+
+-- join으로 바꾸기
+SELECT
+	e.LAST_NAME,
+	e.SALARY,
+	e.DEPARTMENT_ID,
+	p.DEPT_SAL_AVG
+FROM
+	EMPLOYEES e,
+	(
+	SELECT
+		e.DEPARTMENT_ID,
+		ROUND(AVG(e.SALARY)) AS dept_sal_avg
+	FROM
+		EMPLOYEES e
+	WHERE
+		e.DEPARTMENT_ID IS NOT NULL
+	GROUP BY
+		e.DEPARTMENT_ID) p
+WHERE
+	e.DEPARTMENT_ID = p.DEPARTMENT_ID
+	AND p.DEPT_SAL_AVG <e.SALARY
+ORDER BY
+	e.DEPARTMENT_ID;
+
+
+
+
 
 -- last_name 이 'Davies'인 사람보다 나중에 고용된 사원들의 last_name, hire_date 조회 
 SELECT
@@ -271,6 +375,7 @@ WHERE
 		EMPLOYEES e
 	WHERE
 		e.LAST_NAME = 'Davies' ); 
+
 -- last_name 이 'King'인 사원을 매니저로 두고 있는 모든 사원들의 last_name, salary 조회
 SELECT
 	e.LAST_NAME,
@@ -286,6 +391,20 @@ WHERE
 	WHERE
 		e.LAST_NAME = 'King'
 		AND e.EMPLOYEE_ID = ANY(SELECT e.MANAGER_ID FROM EMPLOYEES e) );
+-- in 쓰면 위에 줄 안 써도 됨
+SELECT
+	e.LAST_NAME,
+	e.SALARY
+FROM
+	EMPLOYEES e
+WHERE
+	e.MANAGER_ID in (
+	SELECT
+		e.EMPLOYEE_ID
+	FROM
+		EMPLOYEES e
+	WHERE
+		e.LAST_NAME = 'King');
 
 SELECT e.MANAGER_ID FROM EMPLOYEES e ORDER BY e.MANAGER_ID;
 
@@ -298,25 +417,21 @@ SELECT
 FROM
 	EMPLOYEES e
 WHERE
-	e.SALARY = (
+	(e.SALARY,
+	nvl(e.COMMISSION_PCT, 0)) IN (
 	SELECT
-		e.SALARY
+		e.SALARY,
+		nvl(e.COMMISSION_PCT, 0)
 	FROM
 		EMPLOYEES e
 	WHERE
 		e.LAST_NAME = 'Hall' )
-	OR e.COMMISSION_PCT = (
-	SELECT
-		e.COMMISSION_PCT
-	FROM
-		employees e
-	WHERE
-		e.LAST_NAME = 'Hall')
 	AND e.LAST_NAME != 'Hall';
 
 
 -- last_name 이 'Zlotkey'인 사원과 동일한 부서에서 근무하는 모든 사원들의 사번, 고용날짜 조회
 -- 단, Zlotkey 제외
+
 SELECT
 	e.EMPLOYEE_ID,
 	e.HIRE_DATE,
@@ -324,20 +439,34 @@ SELECT
 FROM
 	EMPLOYEES e
 WHERE
-	e.DEPARTMENT_ID = (
+	e.DEPARTMENT_ID IN (
 	SELECT
 		e.DEPARTMENT_ID
 	FROM
 		EMPLOYEES e
 	WHERE
-		e.LAST_NAME = 'Zlotkey')
-;  
+		e.LAST_NAME = 'Zlotkey' )
+	AND e.LAST_NAME != 'Zlotkey';
+
 
 -- 부서가 위치한 지역의 국가 ID 및 국가명을 조회한다
 -- Location 테이블, departments, contries 테이블 사용
-SELECT c.COUNTRY_ID, c.COUNTRY_NAME FROM LOCATIONS l , DEPARTMENTS d , COUNTRIES c GROUP BY d.DEPARTMENT_ID; 
 
+SELECT * FROM DEPARTMENTS d  JOIN LOCATIONS l ON d.LOCATION_ID = l.LOCATION_ID JOIN COUNTRIES c ON l.COUNTRY_ID = c.COUNTRY_ID;
 
+SELECT
+	c.COUNTRY_ID,
+	c.COUNTRY_NAME
+FROM
+	COUNTRIES c
+WHERE
+	c.COUNTRY_ID IN (
+	SELECT
+		DISTINCT l.COUNTRY_ID
+	FROM
+		DEPARTMENTS d
+	JOIN LOCATIONS l ON
+		d.LOCATION_ID = l.LOCATION_ID)
 
 -- 위치 ID가 1700인 사원들의 연봉과 커미션을 추출한 뒤, 추출된 사원들의 연봉과 커미션이 동일한 사원정보 출력
 -- 출력: 사번, 이름(first_name + last_name), 부서번호, 급여
@@ -348,7 +477,26 @@ WHERE e.salary = ANY (SELECT e.SALARY  FROM EMPLOYEES e, LOCATIONS l WHERE l.LOC
 AND WHERE e.COMMISSION_PCT = ANY (SELECT e.COMMISSION_PCT FROM EMPLOYEES e, LOCATIONS l WHERE l.LOCATION_ID =1700 );
 
 
-
+SELECT
+	e.EMPLOYEE_ID,
+	e.FIRST_NAME || ' ' || e.LAST_NAME,
+	e.DEPARTMENT_ID ,
+	e.SALARY
+FROM
+	EMPLOYEES e
+WHERE
+	(e.SALARY,
+	nvl(e.COMMISSION_PCT, 0))
+IN (
+	SELECT
+		DISTINCT e.SALARY,
+		nvl(e.COMMISSION_PCT, 0)
+FROM
+	EMPLOYEES e
+JOIN DEPARTMENTS d ON
+	e.DEPARTMENT_ID = d.DEPARTMENT_ID
+WHERE
+	d.LOCATION_ID = 1700);
 
 
 
