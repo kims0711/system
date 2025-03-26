@@ -1517,6 +1517,189 @@ WHERE ENAME IN (SELECT ENAME FROM EXAM_EMP E JOIN SALGRADE S ON E.SAL BETWEEN S.
 
 
 
+--------------------------------------------------------------------------------------------------------------------------
+-- 2025-03-26
+
+--트랜잭션 : ALL or NOTHING (전부 실행 or 전부 취소)
+--DML(데이터 조작어) : INSERT, UPDATE, DELETE 일 때만 
+--COMMIT(전부실행) / ROLLBACK(전부취소) 
+ 
+INSERT INTO DEPT_TEMP VALUES(30,'DATABASE','SEOUL');
+UPDATE DEPT_TEMP SET LOC = 'BUSAN' WHERE DEPTNO=40;
+DELETE FROM DEPT_TEMP WHERE DNAME = 'RESEARCH';
+
+ROLLBACK;
+COMMIT;
+
+--세션 : 데이터베이스 접속 후 작업을 수행한 후 접속을 종료하기까지 전체 기간
+SELECT * FROM emp e;
+
+DELETE FROM DEPT_TEMP WHERE deptno = 30;
+
+ROLLBACK;
+COMMIT;
+
+
+--DDL(데이터 정의어) : 객체를 생성, 변경, 삭제 
+--1. 테이블 생성 : CREATE
+--2. 		변경 : ALTER
+--3.		삭제 : DROP
+--4. 테이블 전체 데이터 삭제 : TRUNCATE
+--5. 테이블 이름 변경 : RENAME
+
+--CREATE TABLE 테이블명(
+--	컬럼명1 자료형,
+--	컬럼명2 자료형,
+--	...
+--	컬럼명n 자료형	
+--)
+
+--테이블명 규칙
+--문자로 시작 (영문자, 한글, 숫자 ㄱㄴ)
+--테이블 이름은 30바이트 이하
+--같은 사용자 안에서는 테이블명 중복 불가
+--SQL예약어(SELECT, FROM 등등)는 테이블 이름으로 사용할 수 없음
+
+CREATE TABLE DEPT_DDL(
+	DEPTNO NUMBER(2,0),
+	DNAME VARCHAR2(14),
+	LOC VARCHAR(13)
+);
+
+CREATE TABLE EMP_DDL(
+	EMPNO NUMBER(4,0),
+	ENAME VARCHAR(10),
+	JOB VARCHAR(9),
+	MGR NUMBER(4,0),
+	HIREDATE DATE,
+	SAL NUMBER(7,2),
+	COMM NUMBER(7,2),
+	DEPTNO NUMBER(2,0)
+);
+
+--기존 테이블 구조와 데이터를 이요한 새 테이블 생성
+CREATE TABLE EXAM_EMP AS SELECT * FROM EMP;
+
+--기존 테이블 구조만 이용해 새 테이블 생성(데이터는 안 가져옴)
+CREATE TABLE EXAM_EMP AS SELECT * FROM EMP WHERE <>1;
+
+
+
+--ALTER : 테이블 변경
+--1) 열 추가 
+--2) 열 이름 변경 
+--3) 열 자료형 변경
+--4) 특정 열 삭제 
+
+--HP 열 추가 
+ALTER TABLE EMP_DDL ADD HP VARCHAR(20);
+
+--HP => TEL 열 이름 변경
+ALTER TABLE EMP_DDL RENAME COLUMN HP TO TEL;
+
+--EMPNO 자리수 4=>5
+ALTER TABLE EMP_DDL MODIFY EMPNO NUMBER(5);
+ALTER TABLE EMP_DDL MODIFY ENAME VARCHAR(8);
+ALTER TABLE EMP_DDL MODIFY EMPNO NUMBER(3);
+
+ALTER TABLE EMP_TEMP MODIFY EMPNO NUMBER(3); --오류 남 (이미 자료 있어서)
+
+--특정 열 삭제
+ALTER TABLE EMP_DDL DROP COLUMN TEL;
+
+--테이블 이름 변경 
+RENAME EMP_DDL TO EMP_RENAME;
+
+--테이블 데이터 삭제 
+--DELETE FROM EMP_RENAME;
+
+TRUNCATE TABLE EMP_RENAME; 
+
+--테이블 제거
+DROP TABLE EMP_RENAME;
+
+--MEMBER 테이블 생성하기
+--id varchar2(8) / name 10 / addr 50 / eamil 30 / age number(4)
+
+CREATE TABLE MEMBER(
+	ID VARCHAR2(8),
+	NAME VARCHAR(10),
+	ADDR VARCHAR(50),
+	EMAIL VARCHAR(30),
+	AGE NUMBER(4,0)
+);
+
+
+--MEMBER 테이블 열 추가
+--bigo 열 추가(문자열, 20)
+ALTER TABLE MEMBER ADD BIGO VARCHAR(20);
+
+--bigo 열 크기를 30으로 변경 
+ALTER TABLE MEMBER MODIFY BIGO VARCHAR(30);
+
+--bigo 열 이름을 remark로 변경 
+ALTER TABLE MEMBER RENAME COLUMN BIGO TO REMARK;
+
+
+--오라클 객체 
+--1.오라클 데이터베이스 테이블 
+--	> 1) 사용자 테이블
+--	> 2) 데이터 사전 - 중요한 데이터(사용자, 권한, 메모리, 성능...) : 일반 사용자가 접근하는 곳은 아님
+--	user_*, all_*, dba_, v$_*
+--2. 인덱스 : 검색을  빠르게 처리 
+--	> 1) FULL SCAN
+--	> 2) INDEX SCAN	
+--3. view : 가상 테이블
+--	> 물리적으로 저장된 테이블은 아님 
+
+SELECT * FROM dict; 
+
+--scott 계정이 가지는 테이블 조회
+SELECT TABLE_name
+FROM user_tables;
+
+
+--인덱스 조회
+SELECT * FROM user_indexes;
+
+
+--인덱스 생성
+CREATE INDEX 인덱스명 ON 테이블명(열이름1 ASC OR DESC, 열이름2...열이름n)
+
+CREATE INDEX IDX_EMP_TEMP_SAL ON EMT_TEMP(SAL);
+
+--인덱스 삭제 (삭제는 무조건 DROP이다)
+DROP INDEX IDX_EMP_TEMP_SAL;
+
+SELECT * FROM EMP E;
+
+--뷰(view)
+--권한을 가진 사용자만 생성 가능 
+--보안성 : 특정 열 노출하고 싶지 않을 때
+--편리성 : select문의 복잡도 완화
+--CREATE VIEW 뷰이름(열이름1, 열이름2...)AS(저장할 SELECT 구문)
+
+CREATE VIEW vw_emp20 AS (
+SELECT
+	e.empno,
+	e.ENAME,
+	e.JOB,
+	e.DEPTNO
+FROM
+	emp e
+WHERE
+	e.DEPTNO = 20);
+
+-- view 삭제하기 
+DROP VIEW vw_emp20;
+
+
+
+
+
+
+
+
 
 
 

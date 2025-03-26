@@ -13,3 +13,11 @@ ALTER SESSION SET "_ORACLE_SCRIPT"=TRUE;
 -- 비밀번호 변경
 -- 비밀번호만 대소문자 구별함 
 ALTER USER hr IDENTIFIED BY hr; 
+
+
+
+--데이터사전 DBA_USERS 를 사용하여 사용자 정보 조회
+SELECT * FROM dba_users WHERE username = 'SCOTT';
+
+--scott한테 view 생성 권한 부여하기
+GRANT CREATE VIEW TO scott;
