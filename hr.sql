@@ -330,8 +330,23 @@ ON
     
 
 -- 각 부서별 평균 연봉보다 더 받는 동일부서 사원들의 last_name, salary, deptno, 해당 부서의 평균연봉 조회(부서별 평균 연봉을 기준으로 오름차순)
-SELECT e.LAST_NAME, e.SALARY, e.DEPARTMENT_ID  FROM EMPLOYEES e WHERE (e.DEPARTMENT_ID, e.SALARY)
-IN (SELECT e.DEPARTMENT_ID, ROUND(AVG(e.SALARY)) FROM EMPLOYEES e GROUP BY e.DEPARTMENT_ID) 
+SELECT
+	e.LAST_NAME,
+	e.SALARY,
+	e.DEPARTMENT_ID
+FROM
+	EMPLOYEES e
+WHERE
+	(e.DEPARTMENT_ID,
+	e.SALARY)
+IN (
+	SELECT
+		e.DEPARTMENT_ID,
+		ROUND(AVG(e.SALARY))
+	FROM
+		EMPLOYEES e
+	GROUP BY
+		e.DEPARTMENT_ID) 
 
 -- join으로 바꾸기
 SELECT

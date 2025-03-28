@@ -1619,16 +1619,21 @@ TRUNCATE TABLE EMP_RENAME;
 DROP TABLE EMP_RENAME;
 
 --MEMBER 테이블 생성하기
---id varchar2(8) / name 10 / addr 50 / eamil 30 / age number(4)
+--id varchar2(8) pk / name 10 not null / addr 50 / eamil 30 not null / age number(4)
 
 CREATE TABLE MEMBER(
-	ID VARCHAR2(8),
-	NAME VARCHAR(10),
+	NO NUMBER(8) UNIQUE,
+	ID VARCHAR2(8) PRIMARY KEY, --이름 지정 안 하면 그냥 하면 됨
+	NAME VARCHAR(10) NOT NULL ,
 	ADDR VARCHAR(50),
-	EMAIL VARCHAR(30),
-	AGE NUMBER(4,0)
+	EMAIL VARCHAR(30) NOT NULL ,
+	AGE NUMBER(4)
 );
 
+
+DROP TABLE MEMBER; 
+
+SELECT * FROM MEMBER WHERE name LIKE '%홍%';
 --insert(remark x)
 INSERT INTO MEMBER(id,name,addr,email,age)
 VALUES('kims0711', '김민성','서울시 동대문구', 'altjd10@gmail.com',23);
@@ -1721,8 +1726,8 @@ ALTER TABLE MEMBER ADD NO NUMBER(20);
 --사용할 시퀀스 생성
 CREATE SEQUENCE member_seq;
 
-INSERT INTO MEMBER(id,name,addr,email,age, no)
-VALUES('kims','김민성','서울','altjd@naver.com',23, member_seq.nextval);
+INSERT INTO MEMBER(NO,id,name,addr,email,age)
+VALUES(member_seq.nextval,'kim','김민성','서울','altjd@naver.com',23);
 
 
 -- 시퀀스명.curval : 가장 마지막으로 생성된 시퀀스 확인 
@@ -1952,17 +1957,42 @@ DELETE FROM dept_fk WHERE deptno = 20;
 --부모 삭제 시 자식의 부서가 null로 바뀜 (참조했던 부모가 사라져서 ㅠㅠ)
 
 
+-- CHECK : 데이터의 형태와 범위를 지정 
+
+CREATE TABLE tbl_check(
+	LOGIN_ID VARCHAR2(20) PRIMARY KEY,
+	LOGIN_PWD VARCHAR2(20) CHECK(LENGTH(login_pwd)>3),
+	TEL VARCHAR(20)
+	);
+
+--체크 제약조건(SCOTT.SYS_C008428)이 위배되었습니다
+INSERT INTO TBL_CHECK 
+VALUES('test_id','1021','010-1234-5678');
 
 
 
+-- default : 기본값 (입력 안 해도 기본으로 들어감)
+ CREATE TABLE tbl_default(
+	LOGIN_ID VARCHAR2(20) PRIMARY KEY,
+	LOGIN_PWD VARCHAR2(20) DEFAULT '1234', 
+	TEL VARCHAR(20)
+	);
+
+INSERT INTO TBL_DEFAULT(login_id, tel)
+VALUES('test_id','010-9757-6779');
+
+CREATE TABLE board(
+	id NUMBER(8) PRIMARY KEY,
+	name varchar(20) NOT NULL,
+	regdate DATE DEFAULT sysdate --이런식으로 가능하다는 거! 그냥 날짜 sysdate으로 고정
+);
+INSERT INTO board(id,name) VALUES(1234,'홍길동');
 
 
+--제약조건 끝
+------------------------------------------------------------------------------------------------------------------------
 
-
-
-
-
-
+--사용자 
 
 
 
