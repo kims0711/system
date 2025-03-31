@@ -45,7 +45,7 @@ GRANT CREATE VIEW TO scott;
 --권한을 가지고 있지 않음, 로그온 거절됨 => 권한 부여 해야함
 
 --1. 사용자 생성
-CREATE USER c##test1 IDENTIFIED BY 12345
+CREATE USER c##java IDENTIFIED BY 12345
 DEFAULT TABLESPACE USERS 
 TEMPORARY TABLESPACE TEMP 
 QUOTA 10M ON USERS;
@@ -55,7 +55,7 @@ QUOTA 10M ON USERS;
 --BOARD 테이블에 SELECT, INSERT, DELETE 권한 부여하기
 --GRANT SELECT,INSERT,DELETE ON BOARD(테이블명) TO c##test1;
 --롤 : 여러 개의 권한이 묶여서 정의되어 있음 
-GRANT CONNECT, RESOURCE TO c##test1;
+GRANT CONNECT, RESOURCE TO c##java;
 
 
 
@@ -68,6 +68,13 @@ WHERE username = 'c##test1';
 
 --비밀번호 변경
 ALTER USER c##test1 IDENTIFIED BY 54321;
+
+--사용자 제거
+DROP USER c##test1; -- 'C##TEST1'(을)를 삭제하려면 CASCADE를 지정하여야 합니다
+--사용자 스키마에 객체가 존재한다면 cascade옵션 사용해서 제거 
+DROP USER c##test1 CASCADE;
+
+
 
 
 
